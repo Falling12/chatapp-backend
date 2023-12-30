@@ -17,8 +17,8 @@ model User {
   password  String
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  Chats     Chat[]
-  Message   Message[]
+  chats     Chat[]
+  message   Message[]
 }
 
 model Chat {
@@ -26,8 +26,8 @@ model Chat {
   name      String
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  Users     User[]
-  Messages  Message[]
+  users     User[]
+  messages  Message[]
 }
 
 model Message {
