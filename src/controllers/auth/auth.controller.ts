@@ -7,7 +7,6 @@ const prisma = new PrismaClient()
 
 export const registerUser = async (req: Request, res: Response) => {
     const { email, password, username } = req.body
-    console.log(email)
     const saltRounds = 10
     let hash = ''
 
