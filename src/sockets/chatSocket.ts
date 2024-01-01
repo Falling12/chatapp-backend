@@ -1,5 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { PrismaClient } from "@prisma/client";
+import { ISocket } from "../../types";
 
 const prisma = new PrismaClient()
 
@@ -17,7 +18,7 @@ export const handleMessage = async (socket: Socket, io: Server) => {
                 },
                 user: {
                     connect: {
-                        id: (socket as any).user.id
+                        id: (socket as ISocket).user.id
                     }
                 }
             }

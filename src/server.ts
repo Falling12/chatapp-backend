@@ -21,7 +21,11 @@ app.use(cors({
     origin: '*'
 }))
 
-const io = new Server(server)
+const io = new Server(server, {
+    cors: {
+        origin: '*'
+    }
+})
 
 io.use(async (socket: Socket, next) => {
     const token = socket.handshake.headers.authorization

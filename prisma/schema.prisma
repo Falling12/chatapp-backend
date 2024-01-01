@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,14 +8,18 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  name      String
-  email     String    @unique
-  password  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  chats     Chat[]
-  message   Message[]
+  id                     String          @id @default(cuid())
+  name                   String
+  email                  String          @unique
+  password               String
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+  chats                  Chat[]
+  message                Message[]
+  friends                User[]          @relation("Friends")
+  friendOf               User[]          @relation("Friends")
+  friendRequestsSent     FriendRequest[] @relation("SentRequests")
+  friendRequestsReceived FriendRequest[] @relation("ReceivedRequests")
 }
 
 model Chat {
@@ -39,4 +40,15 @@ model Message {
   chat      Chat     @relation(fields: [chatId], references: [id])
   userId    String
   chatId    String
+}
+
+model FriendRequest {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  sender     User     @relation(name: "SentRequests", fields: [senderId], references: [id])
+  receiver   User     @relation(name: "ReceivedRequests", fields: [receiverId], references: [id])
+  status     String // You can customize this field based on your needs, e.g., "pending", "accepted", "rejected"
+  senderId   String
+  receiverId String
 }
