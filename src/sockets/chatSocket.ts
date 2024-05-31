@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, User } from "@prisma/client";
 import { ISocket } from "../../types";
 
 const prisma = new PrismaClient()
@@ -40,5 +40,22 @@ export const handleMessage = async (socket: Socket, io: Server) => {
         } catch (error) {
             console.log(error)
         }
+    })
+
+    socket.on('typing', async (data: {room: string, typing: boolean, user: string}) => {
+        const user = await prisma.user.findFirst({
+            where: {
+                id: data.user
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                imageUrl: true
+            }
+        })
+    
+        // Send the typing event to all users in the room except the user typing
+        socket.broadcast.to(data.room).emit('typing', {user: user, typing: data.typing});
     })
 }

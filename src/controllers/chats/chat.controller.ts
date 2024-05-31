@@ -33,7 +33,7 @@ export const getUserChats = async (req: IRequestWithUser, res: Response) => {
                             id: true,
                             name: true,
                             email: true,
-                            imageUrl: true
+                            imageUrl: true,
                         }
                     }
                 }
@@ -129,6 +129,7 @@ export const getChatMessages = async (req: IRequestWithUser, res: Response) => {
                     }
                 }
             })
+
         } else {
             messages = await prisma.message.findMany({
                 where: {
@@ -149,6 +150,8 @@ export const getChatMessages = async (req: IRequestWithUser, res: Response) => {
                     }
                 }
             })
+
+            messages = messages.reverse()
         }
 
         return res.json({ data: messages, success: true })

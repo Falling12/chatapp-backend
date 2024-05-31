@@ -94,6 +94,7 @@ export const loginUser = async (req: Request, res: Response) => {
 
         return res.json({ message: 'User logged in successfully', success: true, user: userObject })
     } catch (error) {
+        console.log(error)
         return res.status(500).json({ message: 'Error logging in user', success: false })
     }
 }

@@ -4,7 +4,12 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient()
 
-export const handleFriendRequest = async (socket: ISocket, io: Server, currentUsers: Record<string, string>) => {
+export const handleFriendRequest = async (socket: ISocket, io: Server, currentUsers: Record<string, {
+    socketId: string,
+    userId: string,
+    name: string,
+    online: boolean
+}>) => {
     socket.on('friend-request', async (userId: string) => {
         const user = await prisma.user.findUnique({
             where: {
@@ -58,11 +63,20 @@ export const handleFriendRequest = async (socket: ISocket, io: Server, currentUs
 
         const receiverSocketId = currentUsers[userId]
 
-        io.to(receiverSocketId).emit('friend-request', { friendRequest, message: 'Friend request received', success: true })
+        if (!receiverSocketId) {
+            return
+        }
+
+        io.to(receiverSocketId.socketId).emit('friend-request', { friendRequest, message: 'Friend request received', success: true })
     })
 }
 
-export const handleFriendRequestResponse = async (socket: ISocket, io: Server, currentUsers: Record<string, string>) => {
+export const handleFriendRequestResponse = async (socket: ISocket, io: Server, currentUsers: Record<string, {
+    socketId: string,
+    userId: string,
+    name: string,
+    online: boolean
+}>) => {
     socket.on('friend-request-response', async (data: any) => {
         const { status, friendRequestId } = data
 
@@ -123,6 +137,10 @@ export const handleFriendRequestResponse = async (socket: ISocket, io: Server, c
 
         const friendRequestSenderSocketId = currentUsers[friendRequest.sender.id]
 
-        io.to(friendRequestSenderSocketId).emit('friend-request-response', { friendRequest, message: 'Friend request response received', success: true })
+        if (!friendRequestSenderSocketId) {
+            return
+        }
+
+        io.to(friendRequestSenderSocketId.socketId).emit('friend-request-response', { friendRequest, message: 'Friend request response received', success: true })
     })
 }
