@@ -12,6 +12,7 @@ model User {
   name                   String
   email                  String          @unique
   password               String
+  imageUrl               String?         @default("/static/default.jpg")
   createdAt              DateTime        @default(now())
   updatedAt              DateTime        @updatedAt
   chats                  Chat[]

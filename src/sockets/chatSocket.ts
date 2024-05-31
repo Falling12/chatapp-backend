@@ -5,25 +5,40 @@ import { ISocket } from "../../types";
 const prisma = new PrismaClient()
 
 export const handleMessage = async (socket: Socket, io: Server) => {
-    socket.on('message', async (message: string) => {
-        const room = Array.from(socket.rooms)[1]
-
-        const msg = await prisma.message.create({
-            data: {
-                text: message,
-                chat: {
-                    connect: {
-                        id: room
+    socket.on('message', async (data: {message: string, room: string}) => {
+        try {
+            const msg = await prisma.message.create({
+                data: {
+                    text: data.message,
+                    chat: {
+                        connect: {
+                            id: data.room
+                        }
+                    },
+                    user: {
+                        connect: {
+                            id: (socket as ISocket).user.id
+                        }
                     }
                 },
-                user: {
-                    connect: {
-                        id: (socket as ISocket).user.id
+                select: {
+                    id: true,
+                    text: true,
+                    createdAt: true,
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            imageUrl: true
+                        }
                     }
                 }
-            }
-        })
+            })
 
-        io.to(room).emit('message', msg)
+            io.to(data.room).emit('message', msg)
+        } catch (error) {
+            console.log(error)
+        }
     })
 }

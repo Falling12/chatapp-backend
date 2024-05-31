@@ -34,6 +34,25 @@ export const handleFriendRequest = async (socket: ISocket, io: Server, currentUs
                     }
                 },
                 status: 'pending',
+            },
+            select: {
+                id: true,
+                status: true,
+                sender: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                },
+                receiver: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        imageUrl: true
+                    }
+                }
             }
         })
 
@@ -47,7 +66,7 @@ export const handleFriendRequestResponse = async (socket: ISocket, io: Server, c
     socket.on('friend-request-response', async (data: any) => {
         const { status, friendRequestId } = data
 
-        console.log(status)
+        console.log(data)
 
         const friendRequest = await prisma.friendRequest.update({
             where: {

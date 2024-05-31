@@ -26,7 +26,8 @@ export const registerUser = async (req: Request, res: Response) => {
             select: {
                 id: true,
                 email: true,
-                name: true
+                name: true,
+                imageUrl: true
             }
         })
 
@@ -60,7 +61,13 @@ export const loginUser = async (req: Request, res: Response) => {
                 id: true,
                 email: true,
                 password: true,
-                name: true
+                name: true,
+                imageUrl: true,
+                _count: {
+                    select: {
+                        friends: true,
+                    }
+                }
             }
         })
 
@@ -80,7 +87,9 @@ export const loginUser = async (req: Request, res: Response) => {
             id: user.id,
             email: user.email,
             name: user.name,
-            token: token
+            imageUrl: user.imageUrl,
+            token: token,
+            friendsCount: user._count.friends
         }
 
         return res.json({ message: 'User logged in successfully', success: true, user: userObject })
@@ -102,7 +111,13 @@ export const getMe = async (req: Request, res: Response) => {
             select: {
                 id: true,
                 email: true,
-                name: true
+                name: true,
+                imageUrl: true,
+                _count: {
+                    select: {
+                        friends: true,
+                    }
+                }
             }
         })
 

@@ -14,7 +14,8 @@ export const verifyToken = async (token: string) => {
             select: {
                 id: true,
                 email: true,
-                name: true
+                name: true,
+                imageUrl: true
             }
         })
 

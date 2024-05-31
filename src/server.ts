@@ -8,6 +8,7 @@ import { Server, Socket } from 'socket.io';
 import mainSocket from './sockets/mainSocket';
 import { verifyToken } from './utils/auth';
 import { ISocket } from '../types';
+import path from 'path';
 
 config();
 
@@ -49,6 +50,7 @@ app.get('/', (req, res) => {
   res.json({success: true, message: 'API is running'});
 });
 
+app.use('/static', express.static(path.join(__dirname, './images')))
 app.use('/api', routes)
 
 app.get('*', (req, res) => {
@@ -59,4 +61,5 @@ const PORT = process.env.PORT || 8000;
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(path.join(__dirname, './images'))
 });
