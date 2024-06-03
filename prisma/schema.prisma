@@ -15,6 +15,7 @@ model User {
   imageUrl               String?         @default("/static/default.jpg")
   createdAt              DateTime        @default(now())
   updatedAt              DateTime        @updatedAt
+  online                 Boolean         @default(false)
   chats                  Chat[]
   message                Message[]
   friends                User[]          @relation("Friends")
@@ -28,7 +29,6 @@ model Chat {
   name      String
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  online    Boolean   @default(false)
   users     User[]
   messages  Message[]
 }

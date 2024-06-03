@@ -19,7 +19,8 @@ export const getUserChats = async (req: IRequestWithUser, res: Response) => {
                     id: true,
                     name: true,
                     email: true,
-                    imageUrl: true
+                    imageUrl: true,
+                    online: true
                 }
             },
             messages: {
@@ -34,6 +35,7 @@ export const getUserChats = async (req: IRequestWithUser, res: Response) => {
                             name: true,
                             email: true,
                             imageUrl: true,
+                            online: true
                         }
                     }
                 }

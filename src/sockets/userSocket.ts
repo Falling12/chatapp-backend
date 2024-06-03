@@ -18,7 +18,8 @@ export const handleFriendRequest = async (socket: ISocket, io: Server, currentUs
             select: {
                 id: true,
                 name: true,
-                email: true
+                email: true,
+                imageUrl: true
             }
         })
 
@@ -47,7 +48,8 @@ export const handleFriendRequest = async (socket: ISocket, io: Server, currentUs
                     select: {
                         id: true,
                         name: true,
-                        email: true
+                        email: true,
+                        imageUrl: true
                     }
                 },
                 receiver: {

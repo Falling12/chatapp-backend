@@ -24,20 +24,6 @@ export default (io: Server) => {
             online: true
         }
 
-        const currUserChatIds = await prisma.user.findUnique({
-            where: {
-                id: (socket as ISocket).user.id
-            },
-            select: {
-                chats: {
-                    select: {
-                        id: true
-                    }
-                }
-            }
-        });
-
-        // Emit the online status of the user to all of the users friends
         const friends = await prisma.user.findUnique({
             where: {
                 id: (socket as ISocket).user.id
@@ -51,16 +37,15 @@ export default (io: Server) => {
             }
         });
 
-        currUserChatIds?.chats.forEach(async chat => {
-            await prisma.chat.update({
-                where: {
-                    id: chat.id
-                },
-                data: {
-                    online: true
-                }
-            })
-        })
+        await prisma.user.update({
+            where: {
+                id: (socket as ISocket).user.id
+            },
+            data: {
+                online: true
+            }
+        });
+
 
         friends?.friends.forEach(friend => {
             const friendSocket = currentUsers[friend.id]
@@ -71,9 +56,10 @@ export default (io: Server) => {
 
             io.to(friendSocket.socketId).emit('friend-status', {
                 id: (socket as ISocket).user.id,
+                name: (socket as ISocket).user.name,
                 online: true
             });
-        })
+        });
 
         socket.on('join-room', (roomId: string) => {
             socket.join(roomId);
@@ -83,7 +69,8 @@ export default (io: Server) => {
             socket.leave(roomId);
         });
 
-        socket.on('call-made', async (data: { offer: RTCSessionDescriptionInit, chat: string }) => {
+        socket.on('call-made', async (data: { offer: string, chat: string }) => {
+            console.log(data);
             const chat = await prisma.chat.findUnique({
                 where: {
                     id: data.chat
@@ -111,7 +98,7 @@ export default (io: Server) => {
             });
         })
 
-        socket.on('answer-made', async (data: { answer: RTCSessionDescriptionInit, chat: string }) => {
+        socket.on('answer-made', async (data: { answer: string, chat: string }) => {
             const chat = await prisma.chat.findUnique({
                 where: {
                     id: data.chat
@@ -127,13 +114,13 @@ export default (io: Server) => {
                 return;
             }
 
-            const toSocket = currentUsers[to.id].socketId
+            const toSocket = currentUsers[to.id]
 
             if (!toSocket) {
                 return;
             }
 
-            socket.to(toSocket).emit('answer', {
+            socket.to(toSocket.socketId).emit('answer', {
                 answer: data.answer,
                 chat: data.chat
             });
@@ -143,40 +130,33 @@ export default (io: Server) => {
         await handleFriendRequest(socket as ISocket, io, currentUsers);
         await handleFriendRequestResponse(socket as ISocket, io, currentUsers);
 
-        socket.on('disconnect', () => {
+        socket.on('disconnect', async() => {
             console.log('user disconnected', socket.id);
             delete currentUsers[(socket as ISocket).user.id];
 
-            // If the user disconnects
-            // Set the chat online status to false
-            // But only if all users in the chat are offline
-            currUserChatIds?.chats.forEach(async chat => {
-                const chatUsers = await prisma.chat.findUnique({
-                    where: {
-                        id: chat.id
-                    },
-                    select: {
-                        users: {
-                            select: {
-                                id: true
-                            }
-                        }
-                    }
-                });
+            friends?.friends.forEach(friend => {
+                const friendSocket = currentUsers[friend.id]
 
-                const onlineUsers = chatUsers?.users.filter(user => currentUsers[user.id]?.online);
 
-                if (onlineUsers?.length === 0) {
-                    await prisma.chat.update({
-                        where: {
-                            id: chat.id
-                        },
-                        data: {
-                            online: false
-                        }
-                    })
+                if (!friendSocket) {
+                    return;
                 }
-            })
+
+                io.to(friendSocket.socketId).emit('friend-status', {
+                    id: (socket as ISocket).user.id,
+                    name: (socket as ISocket).user.name,
+                    online: false
+                });
+            });
+
+            await prisma.user.update({
+                where: {
+                    id: (socket as ISocket).user.id
+                },
+                data: {
+                    online: false
+                }
+            });
         });
     });
 };
