@@ -3,26 +3,26 @@ import { ISocket } from "../../types";
 import { handleMessage } from "./chatSocket";
 import { handleFriendRequest, handleFriendRequestResponse } from "./userSocket";
 import { PrismaClient } from "@prisma/client";
+import { Redis } from "ioredis";
 
 const prisma = new PrismaClient();
-
-const currentUsers: Record<string, {
-    socketId: string,
-    userId: string,
-    name: string,
-    online: boolean
-}> = {};
+const redis = new Redis({
+    host: process.env.REDIS_HOST,
+    port: parseInt(process.env.REDIS_PORT as string),
+    password: process.env.REDIS_PASSWORD
+});
 
 export default (io: Server) => {
     io.on('connection', async (socket: Socket) => {
-        console.log('user connected', socket.id, (socket as ISocket).user);
+        const userId = (socket as ISocket).user.id;
+        const userName = (socket as ISocket).user.name;
 
-        currentUsers[(socket as ISocket).user.id] = {
+        await redis.hset(`user:${userId}`, {
             socketId: socket.id,
-            userId: (socket as ISocket).user.id,
-            name: (socket as ISocket).user.name,
+            userId: userId,
+            name: userName,
             online: true
-        }
+        });
 
         const friends = await prisma.user.findUnique({
             where: {
@@ -47,8 +47,8 @@ export default (io: Server) => {
         });
 
 
-        friends?.friends.forEach(friend => {
-            const friendSocket = currentUsers[friend.id]
+        friends?.friends.forEach(async friend => {
+            const friendSocket = await redis.hgetall(`user:${friend.id}`);
 
             if (!friendSocket) {
                 return;
@@ -86,13 +86,13 @@ export default (io: Server) => {
                 return;
             }
 
-            const toSocket = currentUsers[to.id].socketId
+            const toSocket = await redis.hgetall(`user:${to.id}`);
 
             if (!toSocket) {
                 return;
             }
 
-            io.to(toSocket).emit('call', {
+            io.to(toSocket.socketId).emit('call', {
                 offer: data.offer,
                 chat: data.chat
             });
@@ -114,7 +114,7 @@ export default (io: Server) => {
                 return;
             }
 
-            const toSocket = currentUsers[to.id]
+            const toSocket = await redis.hgetall(`user:${to.id}`);
 
             if (!toSocket) {
                 return;
@@ -127,15 +127,15 @@ export default (io: Server) => {
         })
 
         await handleMessage(socket, io);
-        await handleFriendRequest(socket as ISocket, io, currentUsers);
-        await handleFriendRequestResponse(socket as ISocket, io, currentUsers);
+        await handleFriendRequest(socket as ISocket, io, redis);
+        await handleFriendRequestResponse(socket as ISocket, io, redis);
 
         socket.on('disconnect', async() => {
             console.log('user disconnected', socket.id);
-            delete currentUsers[(socket as ISocket).user.id];
+            await redis.hdel(`user:${userId}`, 'socketId', 'userId', 'name', 'online');
 
-            friends?.friends.forEach(friend => {
-                const friendSocket = currentUsers[friend.id]
+            friends?.friends.forEach(async friend => {
+                const friendSocket = await redis.hgetall(`user:${friend.id}`);
 
 
                 if (!friendSocket) {

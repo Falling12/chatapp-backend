@@ -1,15 +1,15 @@
 import { Server } from "socket.io";
 import { ISocket } from "../../types";
 import { PrismaClient } from "@prisma/client";
+import Redis from "ioredis";
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
-export const handleFriendRequest = async (socket: ISocket, io: Server, currentUsers: Record<string, {
-    socketId: string,
-    userId: string,
-    name: string,
-    online: boolean
-}>) => {
+export const handleFriendRequest = async (
+    socket: ISocket, 
+    io: Server, 
+    redis: Redis
+) => {
     socket.on('friend-request', async (userId: string) => {
         const user = await prisma.user.findUnique({
             where: {
@@ -21,17 +21,17 @@ export const handleFriendRequest = async (socket: ISocket, io: Server, currentUs
                 email: true,
                 imageUrl: true
             }
-        })
+        });
 
         if (!user) {
-            return socket.emit('friend-request', { message: 'User not found', success: false })
+            return socket.emit('friend-request', { message: 'User not found', success: false });
         }
 
         const friendRequest = await prisma.friendRequest.create({
             data: {
                 sender: {
                     connect: {
-                        id: (socket as ISocket).user.id
+                        id: socket.user.id
                     }
                 },
                 receiver: {
@@ -61,28 +61,27 @@ export const handleFriendRequest = async (socket: ISocket, io: Server, currentUs
                     }
                 }
             }
-        })
+        });
 
-        const receiverSocketId = currentUsers[userId]
+        const receiverSocket = await redis.hgetall(`user:${userId}`);
 
-        if (!receiverSocketId) {
-            return
+        if (!receiverSocket.socketId) {
+            return;
         }
 
-        io.to(receiverSocketId.socketId).emit('friend-request', { friendRequest, message: 'Friend request received', success: true })
-    })
-}
+        io.to(receiverSocket.socketId).emit('friend-request', { friendRequest, message: 'Friend request received', success: true });
+    });
+};
 
-export const handleFriendRequestResponse = async (socket: ISocket, io: Server, currentUsers: Record<string, {
-    socketId: string,
-    userId: string,
-    name: string,
-    online: boolean
-}>) => {
+export const handleFriendRequestResponse = async (
+    socket: ISocket, 
+    io: Server, 
+    redis: Redis
+) => {
     socket.on('friend-request-response', async (data: any) => {
-        const { status, friendRequestId } = data
+        const { status, friendRequestId } = data;
 
-        console.log(data)
+        console.log(data);
 
         const friendRequest = await prisma.friendRequest.update({
             where: {
@@ -107,7 +106,7 @@ export const handleFriendRequestResponse = async (socket: ISocket, io: Server, c
                     }
                 }
             }
-        })
+        });
 
         if (status === 'accepted') {
             await prisma.user.update({
@@ -121,7 +120,7 @@ export const handleFriendRequestResponse = async (socket: ISocket, io: Server, c
                         }
                     }
                 }
-            })
+            });
 
             await prisma.user.update({
                 where: {
@@ -134,15 +133,15 @@ export const handleFriendRequestResponse = async (socket: ISocket, io: Server, c
                         }
                     }
                 }
-            })
+            });
         }
 
-        const friendRequestSenderSocketId = currentUsers[friendRequest.sender.id]
+        const friendRequestSenderSocket = await redis.hgetall(`user:${friendRequest.sender.id}`);
 
-        if (!friendRequestSenderSocketId) {
-            return
+        if (!friendRequestSenderSocket.socketId) {
+            return;
         }
 
-        io.to(friendRequestSenderSocketId.socketId).emit('friend-request-response', { friendRequest, message: 'Friend request response received', success: true })
-    })
-}
+        io.to(friendRequestSenderSocket.socketId).emit('friend-request-response', { friendRequest, message: 'Friend request response received', success: true });
+    });
+};

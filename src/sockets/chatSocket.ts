@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { PrismaClient, User } from "@prisma/client";
+import { Prisma, PrismaClient, User } from "@prisma/client";
 import { ISocket } from "../../types";
 
 const prisma = new PrismaClient()
@@ -19,7 +19,8 @@ export const handleMessage = async (socket: Socket, io: Server) => {
                         connect: {
                             id: (socket as ISocket).user.id
                         }
-                    }
+                    },
+                    hasRead: false
                 },
                 select: {
                     id: true,
@@ -32,7 +33,8 @@ export const handleMessage = async (socket: Socket, io: Server) => {
                             email: true,
                             imageUrl: true
                         }
-                    }
+                    },
+                    hasRead: true
                 }
             })
 
@@ -58,4 +60,17 @@ export const handleMessage = async (socket: Socket, io: Server) => {
         // Send the typing event to all users in the room except the user typing
         socket.broadcast.to(data.room).emit('typing', {user: user, typing: data.typing});
     })
+
+    socket.on('markAsRead', async (data: { messages: string[], room: string }) => {
+        try {
+            const messages = await prisma.$queryRaw`UPDATE "Message" SET "hasRead" = true WHERE id IN (${Prisma.join(data.messages)}) RETURNING *`
+
+            console.log(messages)
+    
+            io.to(data.room).emit('markAsRead', messages)
+        } catch (error) {
+            console.log(error)
+        }
+    })
+    
 }

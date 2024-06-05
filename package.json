@@ -18,6 +18,7 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "helmet": "^7.1.0",
+    "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.2",
     "socket.io": "^4.7.2"
   },
@@ -32,7 +33,7 @@
     "@typescript-eslint/parser": "^6.16.0",
     "eslint": "^8.56.0",
     "nodemon": "^3.0.2",
-    "prisma": "^5.7.1",
+    "prisma": "^5.15.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }
